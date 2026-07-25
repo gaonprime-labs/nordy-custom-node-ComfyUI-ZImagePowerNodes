@@ -14,15 +14,16 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
  - https://docs.comfy.org/custom-nodes/v3_migration
 
 """
-from typing                 import Final
-from comfy_api.latest       import io
-from torchvision.transforms import v2
-import comfy.sd
 import torch
+import kornia
+import comfy.sd
+from typing           import Final
+from comfy_api.latest import io
 
 
+#class AdjustableVAEDecoderX21
 class VAEDecoderX21(io.ComfyNode):
-    xTITLE         = "VAE Decoder ^G2.1"
+    xTITLE         = "Adjustable VAE Decoder ^G2.1"
     xCATEGORY      = ""
     xCOMFY_NODE_ID = ""
     xDEPRECATED    = False
@@ -36,29 +37,47 @@ class VAEDecoderX21(io.ComfyNode):
             node_id       = cls.xCOMFY_NODE_ID,
             is_deprecated = cls.xDEPRECATED,
             description   = (
-                "Experimental node similar to native ComfyUI VAEDecode node but including a color filtering step. "
+                "An experimental alternative to the native ComfyUI VAEDecode node. It includes "
+                "integrated post-processing tools to easily adjust color tone and contrast in a "
+                "simple way without requiring external nodes."
             ),
             search_aliases=["decode", "decode latent", "latent to image", "render latent"],
             inputs=[
                 io.Latent.Input      ("samples",
-                                      tooltip="The latent image to be decoded. "
+                                      tooltip="The latent representation to be decoded into an image."
                                      ),
                 io.Vae.Input         ("vae",
-                                      tooltip="The VAE model used for decoding the latent image. "
+                                      tooltip="The VAE model used to decode the latent input."
                                      ),
-                io.Combo.Input       ("color_filter",
-                                      options=["none", "intensity1", "intensity2"],
-                                      tooltip="The color filter to be applied to the decoded image. "
+                io.Combo.Input       ("filter",
+                                      options=["none", "bw", "color", "color_twist", "intensity_1", "intensity_2", ],
+                                      tooltip="The color correction filter to apply to the resulting image."
+                                     ),
+                io.Float.Input       ("filter_shift", min=-0.5, max=0.5, default=0.0, step=0.1,
+                                      tooltip="The calibration offset for the selected filter. "
+                                              "This value has a range from -0.5 to 0.5 with 0.0 as the "
+                                              "default ideal baseline balance."
+
+                                      ),
+                io.Boolean.Input     ("auto_contrast",
+                                      tooltip="When enabled, automatically expands the dynamic range of the "
+                                              "image to fix washed-out tones and optimize contrast boundaries."
                                      ),
             ],
             outputs=[
-                io.Image.Output(tooltip="The decoded image. "),
+                io.Image.Output(tooltip="The final decoded image with post-processing adjustments applied."),
             ]
         )
 
     #__ FUNCTION __________________________________________
     @classmethod
-    def execute(cls, vae : comfy.sd.VAE, samples: dict[str, torch.Tensor], color_filter: str):
+    def execute(cls,
+                vae          : comfy.sd.VAE,
+                samples      : dict[str, torch.Tensor],
+                filter       : str,
+                filter_shift : float,
+                auto_contrast: bool,
+                ):
 
         # extract latents from samples
         latents: torch.Tensor = samples["samples"]
@@ -78,14 +97,28 @@ class VAEDecoderX21(io.ComfyNode):
 
         images = images.permute(0, 3, 1, 2)
 
-        if color_filter == "intensity1":
-            images = cls.adjust_saturation(images, 1.50)
+        if filter == "bw":
+            contrast_factor =  1 + (filter_shift*1.2 if filter_shift<0 else filter_shift*0.8)
+            images = cls.adjust_hsv_components(images, saturation_target=0, contrast_scurve_factor=contrast_factor)
 
-        if color_filter == "intensity2":
+        elif filter == "color":
+            contrast_factor =  1 + (filter_shift*1.0 if filter_shift<0 else filter_shift*1.0)
+            images = cls.adjust_hsv_components(images, saturation_scurve_factor=contrast_factor, contrast_scurve_factor=(contrast_factor-1)*0.2 + 1)
+            images = images
+
+        elif filter == "color_twist":
+            images = cls.adjust_hsv_components(images, hue_shift_factor=filter_shift*2)
+
+        elif filter == "intensity_1":
+            contrast_factor =  1 + (filter_shift*1.0 if filter_shift<0 else filter_shift*1.0)
+            images = cls.adjust_hsv_components(images, saturation_target=0.35, contrast_scurve_factor=contrast_factor)
+
+        elif filter == "intensity_2":
+            contrast_factor =  1 + (filter_shift*1.0 if filter_shift<0 else filter_shift*1.0)
+            images = cls.adjust_hsv_components(images, saturation_target=0.40, contrast_scurve_factor=contrast_factor)
+
+        if auto_contrast:
             images = cls.stretch_histogram(images)
-            images = cls.adjust_saturation(images, 1.50)
-            images = cls.apply_s_curve(images, contrast_factor=1.1)
-            images = cls.apply_dithering(images, amplitude_bits=8)
 
         images = images.permute(0, 2, 3, 1).contiguous()
         return (images, )
@@ -94,46 +127,89 @@ class VAEDecoderX21(io.ComfyNode):
     #__ internal functions ________________________________
 
     @staticmethod
-    def apply_s_curve(images: torch.Tensor, contrast_factor: float = 1.5) -> torch.Tensor:
+    def adjust_hsv_components(images: torch.Tensor,
+                              *,
+                              saturation_scurve_factor: float = 0.0,
+                              contrast_scurve_factor  : float = 0.0,
+                              saturation_target       : float = -1.0,
+                              brightness_target       : float = -1.0,
+                              hue_shift_factor        : float = 0.0
+                              ) -> torch.Tensor:
         """
-        Applies a non-linear S-curve transformation to adjust the contrast of the input images.
+        Adjust HSV color space properties of RGB images using S-curve mapping and target normalization.
+
         Args:
-            images:          A tensor containing a batch of images. Shape [B, H, W, C]
-                             with values normalized in the range [0.0, 1.0].
-            contrast_factor: The intensity of the S-curve transformation.
-                              *   1.0: Identity curve (no change to the image).
-                              * > 1.0: Increases contrast by stretching the midtones.
-                              * < 1.0: Reduces contrast by compressing the midtones.
+            images                  : Input tensor of RGB images with shape [B, 3, H, W] and range [0, 1].
+            saturation_scurve_factor: Power factor to apply an S-curve adjustment to saturation.
+            contrast_scurve_factor  : Power factor to apply an S-curve adjustment to value/contrast.
+            saturation_target       : Target mean saturation value (if < 0, the parameter is ignored.)
+            brightness_target       : Target mean brightness value (if < 0, the parameter is ignored.)
+            hue_shift_factor        : Factor to shift the hue based on the value component.
+
         Returns:
-            A tensor containing the batch of images with the transformation applied.
+            A tensor of RGB images with the applied HSV adjustments, in the range.
         """
-        # temporarily map the range to [-1, 1]
-        images = 2.0 * torch.clamp(images, 0.0, 1.0) - 1.0
 
-        # apply exponential correction while preserving the original sign,
-        # this depresses shadows (negatives) and elevates highlights (positives)
-        # when contrast_factor is greater than 1
-        corrected = torch.sign(images) * torch.pow(torch.abs(images), 1.0 / contrast_factor)
+        # transform from RGB to HSV
+        hsv = kornia.color.rgb_to_hsv(images)
+        h = hsv[:, 0:1, :, :]
+        s = hsv[:, 1:2, :, :]
+        v = hsv[:, 2:3, :, :]
 
-        # map back to the original range and return
-        return (corrected + 1.0) / 2.0
+        # apply s-curve adjustment to saturation
+        if saturation_scurve_factor > 0.0 and saturation_scurve_factor != 1.0:
+            s = torch.sign(s) * torch.pow(torch.abs(s), 1.0 / saturation_scurve_factor)
+
+        # apply s-curve adjustment to value (contrast)
+        if contrast_scurve_factor > 0.0 and contrast_scurve_factor != 1.0:
+            v = torch.sign(v) * torch.pow(torch.abs(v), 1.0 / contrast_scurve_factor)
+
+        # normalize saturation to a target mean
+        if saturation_target >= 0.0:
+            s_mean = torch.mean(s, dim=(2, 3), keepdim=True) #< result: [B, 1, 1, 1]
+            s_mean = torch.clamp(s_mean, min=1e-5)
+            s = s * (saturation_target / s_mean)
+            s = torch.clamp(s, 0.0, 1.0)
+
+        # normalize brightness to a target mean
+        if brightness_target >= 0.0:
+            v_mean = torch.mean(s, dim=(2, 3), keepdim=True) #< result: [B, 1, 1, 1]
+            v_mean = torch.clamp(v_mean, min=1e-5)
+            v = v * (brightness_target / v_mean)
+            v = torch.clamp(s, 0.0, 1.0)
+
+        # apply hue shift
+        if hue_shift_factor != 0.0:
+            hue_shift = hue_shift_factor * (v - 0.5)
+            h = torch.remainder(h + hue_shift, 2 * 3.14159)
+
+        # reconstruct HSV and convert back to RGB
+        hsv = torch.cat([h, s, v], dim=1)
+        images = kornia.color.hsv_to_rgb(hsv)
+        return images
 
 
     @staticmethod
-    def stretch_histogram(images: torch.Tensor, q_lower: float = 0.001, q_upper: float = 0.999) -> torch.Tensor:
+    def stretch_histogram(images: torch.Tensor,
+                          *,
+                          q_lower: float = 0.001,
+                          q_upper: float = 0.999
+                          ) -> torch.Tensor:
         """
         Expands the dynamic range of a batch of images by stretching the histogram.
+
         Args:
-            images:   A tensor containing a batch of images. Shape [B, H, W, C]
-                      with values normalized in the range [0.0, 1.0].
-            q_lower:  The lower quantile to ignore (e.g., 0.001 for bottom 0.1%).
-            q_upper:  The upper quantile to ignore (e.g., 0.999 for top 0.1%).
+            images : A tensor containing a batch of images. Shape [B, C, H, W]
+                     with values normalized in the range [0.0, 1.0].
+            q_lower: The lower quantile to ignore (e.g., 0.001 for bottom 0.1%).
+            q_upper: The upper quantile to ignore (e.g., 0.999 for top 0.1%).
+
         Returns:
             A tensor containing the batch of images with the dynamic range expanded.
         """
-        b, h, w, c = images.shape
+        b, c, h, w = images.shape
 
-        # flatten H, W, C dimensions per batch image -> [B, H*W*C]
+        # flatten H, W, C dimensions per batch image -> [B, C*H*W]
         flattened = images.view(b, -1)
 
         # calculate quantiles for each image independently;
@@ -151,28 +227,19 @@ class VAEDecoderX21(io.ComfyNode):
 
 
     @staticmethod
-    def adjust_saturation(images: torch.Tensor, saturation_factor: float) -> torch.Tensor:
-        """
-        Adjusts the saturation level of images.
-        Args:
-            images:            A tensor containing a batch of images. Shape [B, H, W, C]
-                               with values normalized in the range [0.0, 1.0].
-            saturation_factor: The multiplier for color saturation.
-        Returns:
-            A tensor containing the batch of images with adjusted saturation.
-        """
-        return v2.functional.adjust_saturation(images, saturation_factor)
-
-
-    @staticmethod
-    def apply_dithering(images: torch.Tensor, amplitude_bits: float = 1.0) -> torch.Tensor:
+    def apply_dithering(images: torch.Tensor,
+                        *,
+                        amplitude_bits: float = 1.0
+                        ) -> torch.Tensor:
         """
         Applies dithering to reduce banding by adding noise.
+
         Args:
-            images:         A tensor containing a batch of images. Shape [B, H, W, C]
+            images        : A tensor containing a batch of images. Shape [B, C, H, W]
                             with values normalized in the range [0.0, 1.0].
             amplitude_bits: Amplitude of the noise relative to an 8-bit color step.
         Returns:
+
             A tensor containing the batch of images with dithering applied.
         """
         # the value of a single color step in an 8-bit space (1/255 ≈ 0.00392)
