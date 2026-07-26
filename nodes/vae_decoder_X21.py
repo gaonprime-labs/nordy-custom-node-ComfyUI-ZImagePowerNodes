@@ -14,10 +14,12 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
  - https://docs.comfy.org/custom-nodes/v3_migration
 
 """
+import time
 import torch
 import kornia
 import comfy.sd
 from typing             import Final, Any, cast
+from server             import PromptServer
 from comfy_api.latest   import io
 from .custom_widgets    import Separator
 from .core.helpers_node import execute_node
@@ -101,7 +103,6 @@ class VAEDecoderX21(io.ComfyNode):
                 auto_contrast       : bool,
                 divider = None,
                 ):
-
         # execute VAE decoder (with cache)
         images = cls.execute_vae_decoder(cls.hidden.unique_id, vae, samples, allow_extended_range, low_vram_mode)
 
@@ -115,22 +116,20 @@ class VAEDecoderX21(io.ComfyNode):
 
     #__ internal functions ________________________________
 
-    _global_node_cache = {}
-
     @classmethod
     def execute_vae_decoder(cls, node_id, vae, samples, allow_extended_range, low_vram_mode) -> torch.Tensor:
-        MAX_NODES_TO_CACHE = 4
+        _CACHE_STATE["last_execution_time"] = time.time()
+        global_cache = _CACHE_STATE["global_cache"]
+
+        # get the cache specific to this node
+        if node_id not in global_cache:
+            global_cache[node_id] = {}
+        nodecache = global_cache[node_id]
 
         # extract latents from the samples object
         latents: torch.Tensor = samples["samples"]
         if latents.is_nested:
             latents = latents.unbind()[0]
-
-        # get the cache specific to this node
-        nodecache = cls._global_node_cache.get(node_id)
-        if not nodecache:
-            if len(cls._global_node_cache) > MAX_NODES_TO_CACHE: cls._global_node_cache = {}
-            nodecache = {} ; cls._global_node_cache[node_id] = nodecache
 
         # generate the cache validation key
         cache_key = ( id(vae), id(vae.patcher), id(samples), latents.sum().item(), allow_extended_range, low_vram_mode )
@@ -328,3 +327,27 @@ class VAEDecoderX21(io.ComfyNode):
         return torch.clamp(images + noise, 0.0, 1.0)
 
 
+
+#========================== Internal Cache System ==========================#
+
+_CACHE_TIMEOUT = 20  # 20 segundos
+_CACHE_STATE   = {
+    "global_cache": {},
+    "last_execution_time": 0.0,
+}
+def _on_prompt_start(json_data):
+    """
+    Executes synchronously BEFORE building and executing the graph queue.
+    It is the only moment where inactivity is evaluated and the cache is
+    cleared to release any images held in the cache when nodes are no
+    longer being used.
+    """
+    global_cache = _CACHE_STATE["global_cache"]
+    if global_cache:
+        last_execution_time = _CACHE_STATE["last_execution_time"]
+        if (time.time() - last_execution_time) > _CACHE_TIMEOUT:
+            global_cache.clear()
+
+    return json_data
+
+PromptServer.instance.add_on_prompt_handler(_on_prompt_start)
