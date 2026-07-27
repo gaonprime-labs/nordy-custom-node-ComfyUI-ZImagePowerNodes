@@ -230,8 +230,8 @@ class VAEDecoderX21(io.ComfyNode):
         # transform from RGB to HSV
         hsv = kornia.color.rgb_to_hsv(images)
         h = hsv[:, 0:1, :, :]
-        s = hsv[:, 1:2, :, :]
-        v = hsv[:, 2:3, :, :]
+        s = torch.clamp(hsv[:, 1:2, :, :], 0.0, 1.0)
+        v = torch.clamp(hsv[:, 2:3, :, :], 0.0, 1.0)
 
         # apply s-curve adjustment to saturation
         if saturation_scurve_factor > 0.0 and saturation_scurve_factor != 1.0:
@@ -250,10 +250,10 @@ class VAEDecoderX21(io.ComfyNode):
 
         # normalize brightness to a target mean
         if brightness_target >= 0.0:
-            v_mean = torch.mean(s, dim=(2, 3), keepdim=True) #< result: [B, 1, 1, 1]
+            v_mean = torch.mean(v, dim=(2, 3), keepdim=True) #< result: [B, 1, 1, 1]
             v_mean = torch.clamp(v_mean, min=1e-5)
             v = v * (brightness_target / v_mean)
-            v = torch.clamp(s, 0.0, 1.0)
+            v = torch.clamp(v, 0.0, 1.0)
 
         # apply hue shift
         if hue_shift_factor != 0.0:
