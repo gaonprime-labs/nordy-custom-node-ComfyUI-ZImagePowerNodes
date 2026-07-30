@@ -101,25 +101,25 @@ class ZSamplerTurboX21(io.ComfyNode):
                 Separator.Input("divider1", mode="divider"),#======================================
 
                 io.Boolean.Input     ("turbo_creativity",
-                                      default=False, label_on="yes", label_off="no",
+                                      default=False,
                                       tooltip="Enables turbo creativity. This scrambles the image to boost diversity "
                                               "in compositions while maintaining the general style and tone color. "
                                               "Be aware that this may lead to hallucinations. ",
                                      ),
                 io.Boolean.Input     ("alternative_refiner",
-                                      default=False, label_on="yes", label_off="no",
+                                      default=False,
                                       tooltip="Enables an alternative refiner using the DPM++ SDE sampler during the "
                                               "final stage. This enhances contrast and sharpness in fine details but "
                                               "increases overall processing time. ",
                                      ),
                 io.Boolean.Input     ("disable_ibias",
-                                      default=False, label_on="yes", label_off="no",
+                                      default=False,
                                       tooltip="Disables the custom adjustment for the intensity noise bias (ibias). "
                                               "When this option is selected, the ibias parameter is ignored and not "
                                               "calculated during the denoising process, saving a computation step. "
                                      ),
                 io.Boolean.Input     ("old_scheduler",
-                                      default=False, label_on="yes", label_off="no",
+                                      default=False,
                                       tooltip="Enables the legacy scheduler with a different set of sigmas. Although "
                                               "the new scheduler is optimized for general quality, this old version "
                                               "may produce better results in specific cases. ",
