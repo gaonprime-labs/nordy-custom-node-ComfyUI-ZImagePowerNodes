@@ -1,5 +1,5 @@
 /**
- * File    : custom_widgets.js
+ * File    : widgets.js
  * Purpose : Register all custom widgets used in this project.
  * Author  : Martin Rizzo | <martinrizzo@gmail.com>
  * Date    : Feb 3, 2026
@@ -11,12 +11,12 @@
  *_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 */
 import { app }                          from "../../../scripts/app.js";
-import { GalleryWidget }                from "./custom_widgets/gallery_widget.js";
-import { SeparatorWidget }              from "./custom_widgets/separator_widget.js";
-import { addStyleGalleryButton }        from "./custom_widgets/style_gallery_button.js";
-import { CustomStylesComboController }  from "./custom_widgets/custom_styles_combo.js";
-import { StyleWidgetDelegate  , requireVisualStyleGalleryDialog  } from "./custom_widgets/ui_styles.js";
-import { PaletteWidgetDelegate, requireColorPaletteGalleryDialog } from "./custom_widgets/ui_palettes.js";
+import { GalleryWidget }                from "./widgets/gallery_widget.js";
+import { SeparatorWidget }              from "./widgets/separator_widget.js";
+import { addStyleGalleryButton }        from "./widgets/style_gallery_button.js";
+import { CustomStylesComboController }  from "./widgets/custom_styles_combo.js";
+import { StyleWidgetDelegate  , requireVisualStyleGalleryDialog  } from "./widgets/ui_styles.js";
+import { PaletteWidgetDelegate, requireColorPaletteGalleryDialog } from "./widgets/ui_palettes.js";
 const ENABLED = true;
 
 
