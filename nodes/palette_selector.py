@@ -43,14 +43,12 @@ class PaletteSelector(io.ComfyNode):
             search_aliases=["palettes", "colors", "predefined palette", "color palettes"],
             inputs=[
                 zp.Palette.Input("palette",
-                                 version=_PAL_VERSION, allow_variants=False, dialog_title="Color Palettes | ⚗️ experimental",
-                                 dialog_size="small", dialog_view_mode="list", dialog_icon="mdi.mdi-palette-outline",
-                                 tooltip="The specific color palette to select for use in other nodes.",
-                                 height=40,
+                                 version=_PAL_VERSION,
+                                 tooltip="The color palette to use to enhance the prompt's visual description. ",
                                 ),
             ],
             outputs=[
-                zp.Palette.Output("palette", tooltip="The selected color palette."),
+                zp.Palette.Output(tooltip="The selected color palette."),
             ]
         )
 

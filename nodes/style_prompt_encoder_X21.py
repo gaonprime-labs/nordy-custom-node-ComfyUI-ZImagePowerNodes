@@ -66,9 +66,8 @@ class StylePromptEncoderX21(io.ComfyNode):
                                  tooltip="The visual style to apply to the prompt. "
                                 ),
                 zp.Palette.Input("palette",
-                                 version=_PAL_VERSION, allow_variants=False, dialog_title="Color Palettes | ⚗️ experimental",
-                                 dialog_size="small", dialog_view_mode="list", dialog_icon="mdi.mdi-palette-outline",
-                                 tooltip="The color palette to use for enhancing the prompt. "
+                                 version=_PAL_VERSION, dialog_title="Color Palettes | ⚗️ experimental",
+                                 tooltip="The color palette to use to enhance the prompt's visual description. ",
                                 ),
                 io.String.Input ("text",
                                  multiline=True, dynamic_prompts=True,

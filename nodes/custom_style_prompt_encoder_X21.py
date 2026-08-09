@@ -61,14 +61,12 @@ class CustomStylePromptEncoderX21(io.ComfyNode):
                                              "where the base prompt should be inserted.",
                                     ),
                 zp.CustomStyle.Input("custom_style",
-                                      options=['Custom 1', 'Custom 2', 'Custom 3', 'Custom 4', 'Custom 5', 'Custom 6'],
-                                      tooltip="The visual style to be applied to the input prompt. "
+                                     options=['Custom 1', 'Custom 2', 'Custom 3', 'Custom 4', 'Custom 5', 'Custom 6'],
+                                     tooltip="The visual style to be applied to the input prompt. "
                                     ),
                 zp.Palette.Input    ("palette",
-                                     version=_PAL_VERSION, allow_variants=False, dialog_title="Color Palettes | ⚗️ experimental",
-                                     dialog_size="small", dialog_view_mode="list", dialog_icon="mdi.mdi-palette-outline",
-                                     force_input=True, optional=True,
-                                     tooltip="An optional color palette to enhance the prompt's visual description.",
+                                     version=_PAL_VERSION, force_input=True, optional=True,
+                                     tooltip="An optional color palette to use to enhance the prompt's visual description.",
                                     ),
                 io.String.Input     ("prompt",
                                      multiline=True, dynamic_prompts=True,

@@ -76,8 +76,6 @@ class Palette(io.ComfyTypeIO):
             """
             if not version and not endpoint:
                 raise ValueError("Either version or endpoint must be specified.")
-            if not dialog_title:
-                dialog_title = "Select Palette"
 
             extra_dict: dict[str,Any] = {
                 "dialog": {}
@@ -124,8 +122,10 @@ class Palette(io.ComfyTypeIO):
 
 
     class Output(io.Output):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
+        def __init__(self, id: str | None =None, *args, **kwargs):
+            if not id:
+                id = "PALETTE"
+            super().__init__(id, *args, **kwargs)
 
 
 

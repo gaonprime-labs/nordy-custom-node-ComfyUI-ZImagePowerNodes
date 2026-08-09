@@ -67,9 +67,13 @@ function _addStyleSelector(node, name, data, _app) {
     const options       = data[1] || {};
     const endpoint      = options.endpoint   || "";
     const imagesURL     = options.images_url || "";
-    const dialogOptions = options.dialog || {};
-    const widgetDelegate = new StyleWidgetDelegate(endpoint, imagesURL);
-    let widget = new GalleryWidget(type, node, name, options, widgetDelegate, (widget) =>
+    const widgetOptions = {
+        ...(options || {})
+    };
+    const dialogOptions = {
+        ...(options?.dialog || {})
+    };
+    let widget = new GalleryWidget(type, node, name, widgetOptions, new StyleWidgetDelegate(endpoint,imagesURL), (widget) =>
     {
         // launch dialog and update widget value
         const styleDialog  = requireVisualStyleGalleryDialog(endpoint, imagesURL);
@@ -97,16 +101,28 @@ function _addStyleSelector(node, name, data, _app) {
  *     An object containing the added palette selector widget.
  */
 function _addPaletteSelector(node, name, data, _app) {
-    const type           = data[0];
-    const options        = data[1] || {};
-    const endpoint       = options.endpoint || "";
-    const dialog_options = options.dialog || {};
-    let widget = new GalleryWidget(type, node, name, options, new PaletteWidgetDelegate(endpoint), (widget) =>
+    const type          = data[0];
+    const options       = data[1] || {};
+    const endpoint      = options.endpoint || "";
+    const widgetOptions = {
+        height        : 40,
+        allow_variants: false,
+        ...(options || {})
+    };
+    const dialogOptions = {
+        title    : "Color Palettes",
+        size     : "small",
+        view_mode: "list",
+        icon     : "mdi.mdi-palette-outline",
+        ...(options?.dialog || {})
+    };
+    console.log("##>> dialogOptions:", dialogOptions);
+    let widget = new GalleryWidget(type, node, name, widgetOptions, new PaletteWidgetDelegate(endpoint), (widget) =>
     {
         // launch dialog and update widget value
         const paletteDialog  = requireColorPaletteGalleryDialog(endpoint);
         const currentPalette = widget.value;
-        paletteDialog.launch( dialog_options, currentPalette, (selectedPalette) => {
+        paletteDialog.launch( dialogOptions, currentPalette, (selectedPalette) => {
             widget.forceUpdate( selectedPalette );
         });
     });
