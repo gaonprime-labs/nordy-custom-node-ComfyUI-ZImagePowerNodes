@@ -15,18 +15,25 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 """
 from typing                    import Final
-from functools                 import cache
 from comfy_api.latest          import io
 from .core.style               import StyleSet
+from .core.palette             import Palette
 from .data.predefined_styles   import PREDEFINED_STYLES
 from .data.predefined_palettes import PREDEFINED_PALETTES
-from .custom_widgets           import CustomStyleSelector, PaletteSelector
+from .custom_widgets           import CustomStyleSelector as zio_CustomStyle, PaletteSelector as zio_Palette
 _STL_VERSION: Final[str] = "2.0.0" #< the version of style definitions this node uses
 _PAL_VERSION: Final[str] = "2.0.0" #< the version of palette definitions this node uses
 
 
 class CustomStylePromptEncoderX21(io.ComfyNode):
     xTITLE         = "Custom Style + Prompt Encoder ^G2.1"
+    xDESCRIPTION   = (
+        "Encodes a text prompt into embeddings by automatically adapting it to a selected "
+        "custom style (and an optional colour palette), which are then processed by a "
+        "CLIP model to generate the conditioning that guides image generation. "
+        "\n⚠️Because this node is experimental, its parameters, behaviour, or existence "
+        "may change or be removed entirely without prior notice. "
+        )
     xCATEGORY      = ""
     xCOMFY_NODE_ID = ""
     xDEPRECATED    = False
@@ -36,51 +43,44 @@ class CustomStylePromptEncoderX21(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             display_name  = cls.xTITLE,
+            description   = cls.xDESCRIPTION,
             category      = cls.xCATEGORY,
             node_id       = cls.xCOMFY_NODE_ID,
             is_deprecated = cls.xDEPRECATED,
-            description   = (
-                "Transforms a text prompt into embeddings, automatically adapting the prompt to match "
-                "the selected style and, optionally, a chosen colour palette. This node takes a prompt, "
-                "adjusts its visual style according to the chosen option (applying the palette if "
-                "provided), and then encodes it using the supplied CLIP model to generate an embedding "
-                "that will guide image generation. "
-                "Because this node is experimental, its parameters, behaviour, or existence "
-                "may change or be removed entirely without prior notice. "
-            ),
+            search_aliases=["text", "prompt", "text prompt", "positive prompt", "encode text",
+                            "text encoder", "encode prompt", "styles", "custom styles"],
             inputs=[
-                io.Clip.Input            ("clip",
-                                          tooltip="The CLIP model used for encoding the text."
-                                         ),
-                io.String.Input          ("custom_styles",
-                                          optional=False, multiline=True, force_input=True,
-                                          tooltip="An optional multi-line string to customize existing styles. "
-                                                  "Each style definition must start with '>>>' followed by the "
-                                                  "style name, and then include its description on the next lines. "
-                                                  "The description should incorporate '{$@}' where the main text "
-                                                  "prompt will be inserted.",
-                                         ),
-                CustomStyleSelector.Input("custom_style",
-                                          options=['Custom 1', 'Custom 2', 'Custom 3', 'Custom 4', 'Custom 5'],
-                                          tooltip="The customized visual style to apply to the prompt. "
-                                         ),
-                PaletteSelector.Input    ("palette",
-                                          version=_PAL_VERSION, allow_variants=False, dialog_title="Color Palettes | ⚗️ experimental",
-                                          dialog_size="small", dialog_view_mode="list", dialog_icon="mdi.mdi-palette-outline",
-                                          tooltip="The color palette to use for enhancing the prompt. "
-                                         ),
-                io.String.Input          ("prompt",
-                                          multiline=True, dynamic_prompts=True,
-                                          tooltip="The base text prompt to be encoded and styled. "
-                                         ),
+                io.Clip.Input        ("clip",
+                                      tooltip="The CLIP model used for encoding the text."
+                                     ),
+                io.String.Input      ("custom_styles",
+                                      optional=False, multiline=True, force_input=True,
+                                      tooltip="A multi-line string defining custom styles. Each definition must "
+                                              "start with '>>>' followed by the style name, and then the style "
+                                              "description on the next lines. Include '{$@}' in the description "
+                                              "where the base prompt should be inserted.",
+                                     ),
+                zio_CustomStyle.Input("custom_style",
+                                      options=['Custom 1', 'Custom 2', 'Custom 3', 'Custom 4', 'Custom 5', 'Custom 6'],
+                                      tooltip="The visual style to be applied to the input prompt. "
+                                     ),
+                zio_Palette.Input    ("palette",
+                                      version=_PAL_VERSION, allow_variants=False, dialog_title="Color Palettes | ⚗️ experimental",
+                                      dialog_size="small", dialog_view_mode="list", dialog_icon="mdi.mdi-palette-outline",
+                                      force_input=True, optional=True,
+                                      tooltip="An optional color palette to enhance the prompt's visual description.",
+                                     ),
+                io.String.Input      ("prompt",
+                                      multiline=True, dynamic_prompts=True,
+                                      tooltip="The base text prompt to be encoded and styled. "
+                                     ),
             ],
             outputs=[
-                io.Conditioning.Output(tooltip="Final encoded text that will guide the image generation process."),
-                io.String.Output("PROMPT", tooltip="Final prompt after applying the selected visual style and color palette."),
-                io.String.Output("style_name"     , tooltip="Name of the visual style that was applied to the prompt."),
-                io.String.Output("palette_name"   , tooltip="Name of the color palette that was applied to the prompt."),
-                io.String.Output("original_prompt", tooltip="The original text input before any modifications or style adaptations."),
-
+                io.Conditioning.Output(tooltip="The final encoded conditioning that will guide the image generation process."),
+                io.String.Output("PROMPT"         , tooltip="The processed prompt after applying the selected visual style and color palette."),
+                io.String.Output("style_name"     , tooltip="The name of the visual style applied."),
+                io.String.Output("palette_name"   , tooltip="The name of the color palette applied."),
+                io.String.Output("original_prompt", tooltip="The original text input before any modifications."),
             ]
         )
 
@@ -88,10 +88,10 @@ class CustomStylePromptEncoderX21(io.ComfyNode):
     @classmethod
     def execute(cls,
                 clip,
-                custom_style  : str,
-                palette       : str,
-                prompt        : str,
-                custom_styles : str = "",
+                custom_style : str,
+                prompt       : str,
+                custom_styles: str,
+                palette      : str | Palette | None = None,
                 **kwargs
                 ) -> io.NodeOutput:
         custom_styles_obj = StyleSet.from_string(custom_styles)
@@ -103,16 +103,22 @@ class CustomStylePromptEncoderX21(io.ComfyNode):
         if not style_obj:
             style_obj = PREDEFINED_STYLES.by_version(_STL_VERSION).get(custom_style)
 
-        # find the palette that the user has selected
-        palette_obj = PREDEFINED_PALETTES.by_version(_PAL_VERSION).get(palette)
+        # if palette is just a name, get the object from the predefined palettes
+        if isinstance(palette, str):
+            palette = PREDEFINED_PALETTES.by_version(_PAL_VERSION).get(palette)
 
         # apply the style template to the prompt
         if style_obj:
-            prompt = style_obj.apply_to_prompt(prompt, palette=palette_obj, spicy_impact_booster=False)
+            prompt = style_obj.apply_to_prompt(prompt, palette=palette, spicy_impact_booster=False)
 
         # encode the prompt using the provided text encoder (clip)
         tokens = clip.tokenize(prompt)
-        return io.NodeOutput( clip.encode_from_tokens_scheduled(tokens), prompt, custom_style, palette, prompt )
+        return io.NodeOutput(clip.encode_from_tokens_scheduled(tokens),
+                             prompt,
+                             custom_style,
+                             palette.name if palette else "none",
+                             prompt
+                             )
 
 
     #__ VALIDATION ________________________________________
