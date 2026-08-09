@@ -1,5 +1,5 @@
 """
-File    : custom_widgets.py
+File    : widgets.py
 Purpose : Custom ComfyUI widgets implemented specifically for this project.
 Author  : Martin Rizzo | <martinrizzo@gmail.com>
 Date    : May 11, 2026

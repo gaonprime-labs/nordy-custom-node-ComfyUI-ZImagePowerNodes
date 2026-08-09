@@ -20,7 +20,7 @@ from math                import pi
 from typing              import Any
 from functools           import cache
 from comfy_api.latest    import io
-from .custom_widgets     import Separator
+from .widgets     import Separator
 from .core.helpers_image import adjust_hsv_components, stretch_histogram, apply_dithering, convert_to_rgb
 class Filter(Enum):
     """Enum representing available image processing filters.

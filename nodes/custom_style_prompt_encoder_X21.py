@@ -20,7 +20,7 @@ from .core.style               import StyleSet
 from .core.palette             import Palette
 from .data.predefined_styles   import PREDEFINED_STYLES
 from .data.predefined_palettes import PREDEFINED_PALETTES
-from .custom_widgets           import CustomStyleSelector as zio_CustomStyle, PaletteSelector as zio_Palette
+from .widgets           import CustomStyleSelector as zio_CustomStyle, PaletteSelector as zio_Palette
 _STL_VERSION: Final[str] = "2.0.0" #< the version of style definitions this node uses
 _PAL_VERSION: Final[str] = "2.0.0" #< the version of palette definitions this node uses
 

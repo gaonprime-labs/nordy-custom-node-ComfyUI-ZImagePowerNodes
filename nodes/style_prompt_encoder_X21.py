@@ -20,7 +20,7 @@ from comfy_api.latest          import io
 from .core.style               import StyleSet
 from .data.predefined_styles   import PREDEFINED_STYLES
 from .data.predefined_palettes import PREDEFINED_PALETTES
-from .custom_widgets           import Separator, StyleSelector, PaletteSelector
+from .widgets           import Separator, StyleSelector, PaletteSelector
 _STL_VERSION: Final[str] = "2.0.0" #< the version of style definitions this node uses
 _PAL_VERSION: Final[str] = "2.0.0" #< the version of palette definitions this node uses
 

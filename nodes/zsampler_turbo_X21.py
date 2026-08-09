@@ -17,11 +17,11 @@ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 """
 from typing                        import Any
 from comfy_api.latest              import io
-from .custom_widgets               import Separator
+from .widgets               import Separator
 from .core.progress_bar            import ProgressPreview
 from .core.zsampler_turbo_core     import zsampler_turbo_core
 from .core.zsampler_turbo_corehelp import EulerAss, DPMPP_SDEss
-from .custom_widgets               import Separator
+from .widgets               import Separator
 _SPECTRAL_TILTS_BY_NAME = {
     "none"       : (   "", ( 0.0,  0.0), 1.0),
     "stage3_H"   : (  "3", (-0.3, -0.3), 1.0),

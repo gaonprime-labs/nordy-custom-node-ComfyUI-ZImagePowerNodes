@@ -18,7 +18,7 @@ from typing                   import Final
 from functools                import cache
 from comfy_api.latest         import io
 from .data.predefined_styles  import PREDEFINED_STYLES
-from .custom_widgets          import StyleGalleryButton, Separator
+from .widgets          import StyleGalleryButton, Separator
 _STL_VERSION: Final[str] = "1.0.0" #< the version of style definitions this node uses
 
 

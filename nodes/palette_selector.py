@@ -18,7 +18,7 @@ from typing                    import Final
 from comfy_api.latest          import io
 from .core.palette             import Palette
 from .data.predefined_palettes import PREDEFINED_PALETTES
-from .custom_widgets           import PaletteSelector as zio_Palette
+from .widgets           import PaletteSelector as zio_Palette
 _PAL_VERSION: Final[str] = "2.0.0" #< the version of palette definitions this node uses
 
 
