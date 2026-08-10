@@ -36,8 +36,6 @@ class ZSamplerTurboX21(io.ComfyNode):
         "Experimental new version of Z-Sampler Turbo. It takes a Z-Image Turbo model, "
         "an initial latent image, and prompt/conditioning to produce a denoised latent "
         "output, which can then be decoded into the final image. "
-        "Because this node is experimental, its parameters, behaviour, or existence "
-        "may change or be removed entirely without prior notice. "
         )
     xCATEGORY      = ""
     xCOMFY_NODE_ID = ""

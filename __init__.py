@@ -94,18 +94,26 @@ def _register_node(node_class      : type,
         node_subcategory = "/" + node_subcategory
 
     class_name     = node_class.__name__
-    title          = node_class.xTITLE
+    title          = node_class.xTITLE       or class_name
+    description    = node_class.xDESCRIPTION or ""
     category       = f"{__PROJECT_EMOJI}{__PROJECT_MENU}{node_subcategory}"
     comfy_node_id  = f"{class_name} {__PROJECT_ID}"
 
     if deprecated:
         title = f"❌[DEPRECATED] {title}"
     elif experimental:
-        title = f"⚗️🔬| {title}"
+        title       = f"⚗️🔬| {title}"
+        description = (
+            f"{description}\n⚠️ Because this node is experimental, "
+            "its parameters, behavior, or availability may change "
+            "or be removed entirely without prior notice."
+        )
+
     else:
         title = f"{__PROJECT_EMOJI}| {title}"
 
     node_class.xTITLE         = title
+    node_class.xDESCRIPTION   = description
     node_class.xCATEGORY      = category
     node_class.xCOMFY_NODE_ID = comfy_node_id
     node_class.xDEPRECATED    = deprecated
