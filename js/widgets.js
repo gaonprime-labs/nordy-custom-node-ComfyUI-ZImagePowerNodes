@@ -116,7 +116,6 @@ function _addPaletteSelector(node, name, data, _app) {
         icon     : "mdi.mdi-palette-outline",
         ...(options?.dialog || {})
     };
-    console.log("##>> dialogOptions:", dialogOptions);
     let widget = new GalleryWidget(type, node, name, widgetOptions, new PaletteWidgetDelegate(endpoint), (widget) =>
     {
         // launch dialog and update widget value
