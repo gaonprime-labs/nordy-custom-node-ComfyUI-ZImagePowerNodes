@@ -26,6 +26,12 @@ from .core.zsampler_turbo_core import zsampler_turbo_core
 
 class ZSamplerTurbo2Simple(io.ComfyNode):
     xTITLE         = "Z-Sampler Turbo ^G2 (Simple)"
+    xDESCRIPTION   = (
+        'Simplified version of Z-Sampler Turbo (second generation), offering a streamlined interface '
+        'for quick and easy use while retaining all of its features and capabilities. It takes a '
+        'Z-Image Turbo model, an initial latent image, and prompt/conditioning to produce a denoised '
+        'latent output, which can then be decoded into the final image.'
+        )
     xCATEGORY      = ""
     xCOMFY_NODE_ID = ""
     xDEPRECATED    = False
@@ -35,15 +41,10 @@ class ZSamplerTurbo2Simple(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             display_name  = cls.xTITLE,
+            description   = cls.xDESCRIPTION,
             category      = cls.xCATEGORY,
             node_id       = cls.xCOMFY_NODE_ID,
             is_deprecated = cls.xDEPRECATED,
-            description   = (
-                'Simplified version of Z-Sampler Turbo (second generation), offering a streamlined interface '
-                'for quick and easy use while retaining all of its features and capabilities. It takes a '
-                'Z-Image Turbo model, an initial latent image, and prompt/conditioning to produce a denoised '
-                'latent output, which can then be decoded into the final image.'
-            ),
             inputs=[
                 io.Latent.Input      ("latent_input",
                                       tooltip="The initial latent image to be denoised; usually an 'Empty Latent' for "

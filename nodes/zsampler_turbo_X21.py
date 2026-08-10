@@ -32,6 +32,13 @@ _SPECTRAL_TILTS_BY_NAME = {
 
 class ZSamplerTurboX21(io.ComfyNode):
     xTITLE         = "Z-Sampler Turbo ^G2.1"
+    xDESCRIPTION   = (
+        "Experimental new version of Z-Sampler Turbo. It takes a Z-Image Turbo model, "
+        "an initial latent image, and prompt/conditioning to produce a denoised latent "
+        "output, which can then be decoded into the final image. "
+        "Because this node is experimental, its parameters, behaviour, or existence "
+        "may change or be removed entirely without prior notice. "
+        )
     xCATEGORY      = ""
     xCOMFY_NODE_ID = ""
     xDEPRECATED    = False
@@ -41,16 +48,10 @@ class ZSamplerTurboX21(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             display_name  = cls.xTITLE,
+            description   = cls.xDESCRIPTION,
             category      = cls.xCATEGORY,
             node_id       = cls.xCOMFY_NODE_ID,
             is_deprecated = cls.xDEPRECATED,
-            description   = (
-                "Experimental new version of Z-Sampler Turbo. It takes a Z-Image Turbo model, "
-                "an initial latent image, and prompt/conditioning to produce a denoised latent "
-                "output, which can then be decoded into the final image. "
-                "Because this node is experimental, its parameters, behaviour, or existence "
-                "may change or be removed entirely without prior notice. "
-            ),
             inputs=[
                 io.Latent.Input      ("latent_input",
                                       tooltip="The initial latent image to be denoised; usually an 'Empty Latent' for "

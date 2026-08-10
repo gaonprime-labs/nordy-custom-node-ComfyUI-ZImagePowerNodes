@@ -48,6 +48,12 @@ class Filter(Enum):
 
 class BasicImageFilters(io.ComfyNode):
     xTITLE         = "Basic Image Filters"
+    xDESCRIPTION   = (
+        "Provides a set of image processing filters for post-generation color "
+        "correction and tone adjustment. Supports up to three simultaneous "
+        "filtering layers with individual intensity scaling, along with an "
+        "optional automatic contrast normalization pass."
+    )
     xCATEGORY      = ""
     xCOMFY_NODE_ID = ""
     xDEPRECATED    = False
@@ -57,11 +63,10 @@ class BasicImageFilters(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             display_name  = cls.xTITLE,
+            description   = cls.xDESCRIPTION,
             category      = cls.xCATEGORY,
             node_id       = cls.xCOMFY_NODE_ID,
             is_deprecated = cls.xDEPRECATED,
-            description   = (""
-            ),
             search_aliases=["decode", "decode latent", "latent to image", "render latent"],
             inputs=[
                 io.Image.Input    ("images"),

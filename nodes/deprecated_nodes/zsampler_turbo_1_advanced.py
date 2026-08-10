@@ -26,6 +26,11 @@ from ..core.zsampler_turbo_legacy_method import zsampler_turbo_legacy_method
 
 class ZSamplerTurboAdvanced(io.ComfyNode):
     xTITLE         = "Z-Sampler Turbo ^g1 (Advanced)"
+    xDESCRIPTION   = (
+        'Efficiently denoises latent images, specifically tuned for the "Z-Image Turbo" model. '
+        'This node takes a Z-Image Turbo model, an initial latent image, and conditioning parameters, '
+        'and produces a denoised output ready for further processing or decoding.'
+        )
     xCATEGORY      = ""
     xCOMFY_NODE_ID = ""
     xDEPRECATED    = False
@@ -35,14 +40,10 @@ class ZSamplerTurboAdvanced(io.ComfyNode):
     def define_schema(cls) -> io.Schema:
         return io.Schema(
             display_name  = cls.xTITLE,
+            description   = cls.xDESCRIPTION,
             category      = cls.xCATEGORY,
             node_id       = cls.xCOMFY_NODE_ID,
             is_deprecated = cls.xDEPRECATED,
-            description   = (
-                'Efficiently denoises latent images, specifically tuned for the "Z-Image Turbo" model. '
-                'This node takes a Z-Image Turbo model, an initial latent image, and conditioning parameters, '
-                'and produces a denoised output ready for further processing or decoding.'
-            ),
             inputs=[
                 io.Model.Input       ("model",
                                       tooltip="The model used for generating the latent images.",
