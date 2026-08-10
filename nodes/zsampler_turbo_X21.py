@@ -87,13 +87,13 @@ class ZSamplerTurboX21(io.ComfyNode):
                                       default=8, min=2, max=14, step=1,
                                       tooltip="Number of iterations to perform during the denoising process.",
                                      ),
-                io.Float.Input       ("ibias",
-                                      default=0.0, min=-1.0, max=1.0, step=0.2,
-                                      tooltip="Custom adjustment for the intensity noise bias. Usually kept at 0.0; "
-                                              "used to fine-tune 'brightness'. Note that its effect depends heavily "
-                                              "on the prompt and image style, so it may not always act as a simple "
-                                              "brightness control. Adjust it within the positive or negative range "
-                                              "until it seems right to you. ",
+                io.Float.Input       ("initial_bias",
+                                      default=0.0, min=-0.5, max=0.5, step=0.1, round=0.1,
+                                      tooltip="Custom adjustment for initial noise bias, usually kept at 0.0; "
+                                              "Positive values amplify dominant prompt features (e.g., making bright "
+                                              "scenes brighter or dark scenes darker), while negative values temper "
+                                              "them. Keep in mind it reacts differently to every prompt, it's not a "
+                                              "simple brightness control. ",
                                      ),
                 io.Combo.Input       ("spectral_tilt",
                                       options=cls.spectral_tilts(),
@@ -130,39 +130,31 @@ class ZSamplerTurboX21(io.ComfyNode):
     #__ FUNCTION __________________________________________
     @classmethod
     def execute(cls,
-                latent_input          : dict[str, Any],
-                model                 : Any,
-                positive              : list,
-                seed                  : int,
-                steps                 : int,
-                ibias                 : float,
-                spectral_tilt         : str,
-                turbo_creativity      : bool,
-                detailed_refiner   : bool,
-                new_scheduler         : bool,
+                latent_input    : dict[str, Any],
+                model           : Any,
+                positive        : list,
+                seed            : int,
+                steps           : int,
+                initial_bias    : float,
+                spectral_tilt   : str,
+                turbo_creativity: bool,
+                detailed_refiner: bool,
+                new_scheduler   : bool,
                 *,
                 positive_stg2 : list | None = None,
                 positive_stg3 : list | None = None,
-                intensity     : float       = 0.5,
                 denoise       : float       = 1.0,
                 **kwargs
                 ) -> io.NodeOutput:
+        # round float values to 1 decimal place
+        initial_bias = round(initial_bias, 1)
+
         # set sigma limits when denoise is less than 1.0, typically used for inpainting
         sigma_limits = ( denoise**0.5 , 0 ) if denoise < 0.999 else None
 
-        # `intensity` determines the level of noise overdose and noise bias
-        # (intensity is hardcoded to 0.5 in this node)
-        initial_noise_overdose   = intensity * 0.4                              #< overdose   = 0.2
-        initial_noise_bias_level = (intensity+1)*4-1                            # = 5.0
-        initial_noise_bias_level = min(max(initial_noise_bias_level, 0.0), 4.0) #< bias_level = 4.0
-
-        print("##>> initial_noise_bias_level:", initial_noise_bias_level)
-
-        # apply user-defined adjustment `ibias` to the calculated noise bias level
-        initial_noise_bias_level += 10 * ibias
-        initial_noise_bias_level = min(max(initial_noise_bias_level, -6.0), 14.0)
-
-        initial_noise_bias_level = min(max(10 * ibias, -10.0), 10.0)
+        # determines the level of noise overdose and noise bias
+        initial_noise_overdose   = 0.2  # (intensity * 0.4) with intensity fixed at 0.5
+        initial_noise_bias_level = min(max(20 * initial_bias, -10.0), 10.0)
 
         # turbo_creativity enables stage2 scrambling + coherence step
         stage2_scramble       = False
