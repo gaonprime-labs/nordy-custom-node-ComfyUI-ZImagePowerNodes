@@ -28,6 +28,11 @@ _SPECTRAL_TILTS_BY_NAME = {
     "stages12x_l": ("12x", ( 0.2, -2.0), 0.8),
     "stages123_H": ("123", ( 0.2, -0.9), 0.7),
 }
+_SAMPLING_SCALES_BY_NAME = {
+    "none"       : (1.00, 1.00, 1.00),
+    "max_speed"  : (0.25, 0.50, 0.75),
+    "max_quality": (0.50, 0.75, 1.00),
+}
 
 
 class ZSamplerTurboX21(io.ComfyNode):
@@ -94,6 +99,10 @@ class ZSamplerTurboX21(io.ComfyNode):
                                               "them. Keep in mind it reacts differently to every prompt, it's not a "
                                               "simple brightness control. ",
                                      ),
+                io.Combo.Input       ("latent_scaling",
+                                      options=cls.sampling_scales(),
+                                      tooltip=""
+                                     ),
                 io.Combo.Input       ("spectral_tilt",
                                       options=cls.spectral_tilts(),
                                       tooltip=""
@@ -135,6 +144,7 @@ class ZSamplerTurboX21(io.ComfyNode):
                 seed            : int,
                 steps           : int,
                 initial_bias    : float,
+                latent_scaling  : str,
                 spectral_tilt   : str,
                 turbo_creativity: bool,
                 detailed_refiner: bool,
@@ -145,13 +155,13 @@ class ZSamplerTurboX21(io.ComfyNode):
                 denoise       : float       = 1.0,
                 **kwargs
                 ) -> io.NodeOutput:
-        # round float values to 1 decimal place
+        # round the float inputs to a single decimal place
         initial_bias = round(initial_bias, 1)
 
         # set sigma limits when denoise is less than 1.0, typically used for inpainting
         sigma_limits = ( denoise**0.5 , 0 ) if denoise < 0.999 else None
 
-        # determines the level of noise overdose and noise bias
+        # configure the perturbation of the initial noise
         initial_noise_overdose   = 0.2  # (intensity * 0.4) with intensity fixed at 0.5
         initial_noise_bias_level = min(max(20 * initial_bias, -10.0), 10.0)
 
@@ -184,12 +194,18 @@ class ZSamplerTurboX21(io.ComfyNode):
         if "2" in stilt_stages: samplers[1] = EulerAss(alpha_tilting, alpha_sharpness=spectral_tilt_sharpness)
         if "3" in stilt_stages: samplers[2] = EulerAss(alpha_tilting, alpha_sharpness=spectral_tilt_sharpness)
 
-        # if alternative refiner is selected -> set "dpmpp_sde" as the sampler for stage 3;
-        # when "Spectral Tilt" is enabled, a custom sampler is used (DPMPP_SDEss)
+        # if the 'detailed refiner' is selected -> switch stage 3 to "dpmpp_sde".
+        # if "Spectral Tilt" is also enabled for stage 3, use the custom "DPMPP_SDEss" sampler instead.
         if detailed_refiner:
             samplers[2] = "dpmpp_sde"
             if "3" in spectral_tilt:
                 samplers[2] = DPMPP_SDEss(alpha_tilting, alpha_sharpness=spectral_tilt_sharpness)
+
+        # resolve the latent size scale for each stage:
+        #  scales[0] -> scale used during the initial (and optional) noise estimation
+        #  scales[1] -> scale used during the first stage
+        #  scales[2] -> scale used during the second stage
+        latent_sample_scales = _SAMPLING_SCALES_BY_NAME.get(latent_scaling)
 
         # run the Z-Sampler Turbo core method on the latent image
         latent_output = zsampler_turbo_core(
@@ -200,7 +216,7 @@ class ZSamplerTurboX21(io.ComfyNode):
             steps = steps,
             initial_noise_bias_level = initial_noise_bias_level,
             initial_noise_overdose   = initial_noise_overdose,
-            noise_est_sample_size    = "full_size",
+            latent_sample_scales     = latent_sample_scales,
             sigma_preset_name        = "bravo" if new_scheduler else "alpha",
             sigma_limits             = sigma_limits,
             positive_stg2_preproc    = positive if weak_stg2_prompt_influence else positive_stg2,
@@ -220,3 +236,7 @@ class ZSamplerTurboX21(io.ComfyNode):
     @staticmethod
     def spectral_tilts() -> list[str]:
         return list( _SPECTRAL_TILTS_BY_NAME.keys() )
+
+    @staticmethod
+    def sampling_scales() -> list[str]:
+        return list( _SAMPLING_SCALES_BY_NAME.keys() )
