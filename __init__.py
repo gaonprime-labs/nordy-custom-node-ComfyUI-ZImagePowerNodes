@@ -229,6 +229,9 @@ class ZImagePowerNodesExtension(ComfyExtension):
         from .nodes.image_grid_builder import ImageGridBuilder
         _register_node( ImageGridBuilder, nodes, subcategory )
 
+        from .nodes.comfy_kitchen_attention_enabler import ComfyKitchenAttentionEnabler
+        _register_node( ComfyKitchenAttentionEnabler, nodes, subcategory )
+
 
         # report version and the number of nodes added by this extension
         version           = get_project_version()
