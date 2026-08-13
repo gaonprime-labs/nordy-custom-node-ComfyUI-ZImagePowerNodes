@@ -101,13 +101,19 @@ class ZSamplerTurboX21(io.ComfyNode):
                                      ),
                 io.Combo.Input       ("latent_scaling",
                                       options=cls.sampling_scales(),
-                                      tooltip=""
+                                      tooltip="Determines the resolution scale applied to latents during each "
+                                              "sampling stage. 'Max Speed' uses lower internal scaling for faster "
+                                              "generation, while 'Max Quality' employs higher scaling to preserve "
+                                              "finer details and structural integrity at the cost of processing time. "
                                      ),
                 io.Combo.Input       ("spectral_tilt",
                                       options=cls.spectral_tilts(),
-                                      tooltip=""
+                                      tooltip="Applies a frequency-based bias to the noise across sampling stages. "
+                                              "Early stages amplify low-frequency noise to establish composition, "
+                                              "while later stages shift focus to high-frequency components to sharpen "
+                                              "fine details. Each preset defines which stages (1, 2, or 3) receive "
+                                              "this spectral modification and the intensity of the adjustment. "
                                      ),
-
                 io.Boolean.Input     ("turbo_creativity",
                                       default=False,
                                       tooltip="Enables turbo creativity. This scrambles the image to boost diversity "
