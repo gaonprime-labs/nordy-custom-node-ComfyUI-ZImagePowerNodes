@@ -1,6 +1,6 @@
 <div align="center">
 
-# Z-Image Power Nodes <br><sub><sup><i>Pushing the best image generation model to its limits!</i></sup></sub>
+# Z-Image Power Nodes v2.1<br><sub><sup><i>Pushing the best image generation model to its limits!</i></sup></sub>
 [![Last](https://img.shields.io/badge/CivitAI%3A-Z--Image%3APower%3ANodes-EEE?labelColor=1971C2&logo=c%2B%2B&logoColor=white)](https://civitai.red/models/2322533/z-image-power-nodes)  
 [![Platform](https://img.shields.io/badge/platform%3A-ComfyUI-007BFF)](#)
 [![License](https://img.shields.io/github/license/martin-rizzo/ComfyUI-ZImagePowerNodes?label=license%3A&color=28A745)](#)
@@ -10,8 +10,14 @@
 
 </div>
 
-**Z-Image Power Nodes** is a collection of nodes designed specifically for the [Z-Image / Z-Image Turbo model](https://github.com/Tongyi-MAI/Z-Image). They are based on some ideas and discoveries I made while developing the [Amazing Z-Image Workflow](https://github.com/martin-rizzo/AmazingZImageWorkflow).
+**Z-Image Power Nodes** is a collection of nodes designed specifically for the [Z-Image / Z-Image Turbo model](https://github.com/Tongyi-MAI/Z-Image). They are based on some discoveries I made while developing the [Amazing Z-Image Workflow](https://github.com/martin-rizzo/AmazingZImageWorkflow).
 
+### Version 2.1 Updates
+Starting with v2.1, the nodes are optimized for the latest features in ComfyUI, ensuring compatibility with recent updates such as **Nodes 2.0**, **Int8-ConvRot**, and **ComfyKitchen-Attention**. However, backward compatibility is maintained with older versions (minimum: Python 3.10, PyTorch 2.5, and ComfyUI v0.11.0).
+
+Additionally, experimental nodes are included for testing new concepts or simplifying user interfaces. These nodes are subject to change or removal in future updates, use them at your own discretion.
+
+### Support This Project
 ❤️ If you find these nodes useful or they’ve helped you in your projects, please consider supporting my work.
 Your support allows me to continue researching and creating new developments within the open source community.  
 There are several ways to do so:
